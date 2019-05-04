@@ -1,18 +1,22 @@
 from mido import MidiFile, MidiTrack
+from pypianoroll import Track
+
 
 class MidiEvent:
-    def __init__(self, type, velocity, duration, start_tick, note):
-        self.type = type
+    def __init__(self, event_type, velocity, duration, start_tick, note):
+        self.event_type = event_type
         self.velocity = velocity
         self.duration = duration
         self.start_tick = start_tick
         self.note = note
 
+
 class MidiRepExtractor:
     NOTE_ON = 'note_on'
     NOTE_OFF = 'note_off'
+
     def __init__(self, filename):
-        self.fn = filename
+        self.file = MidiFile(filename)
 
     def print_messages(self):
         """
@@ -31,11 +35,12 @@ class MidiRepExtractor:
         :return: array of MidiEvents
         """
         data = []
-        to_parse = MidiFile(self.fn)
-        if track != None and isinstance(track, int):
-            to_parse = to_parse.tracks[track]
+        to_parse = self.file
+        if (track is not None) and isinstance(track, int):
+            to_parse = self.file.tracks[track]
         start_tick = 0
-        for i in range(len(to_parse) - 1):
+        parse_dur = len(to_parse) - 1
+        for i in range(parse_dur):
             msg = to_parse[i]
             if msg.is_meta:
                 continue
@@ -45,13 +50,14 @@ class MidiRepExtractor:
                 start_tick += msg.time
         return data
 
-    def get_temporal_image(self, resolution=None):
+    def get_temporal_image(self, early_stop = -1):
         """
         Returns an array of frequencies at the specified time resolution
         :return:
         """
-        # TODO: Implement this method
-        pass
+        parse_dur = early_stop * self.file.ticks_per_beat
+        image = []
+
 
     def get_midi_obj(self):
         """
