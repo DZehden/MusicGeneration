@@ -1,1 +1,1 @@
-from .midi_rep_extractor import (MidiRepExtractor, MidiEvent)
+from .midi_rep_extractor import (MidiRepExtractor, Note, MidiEvent)
