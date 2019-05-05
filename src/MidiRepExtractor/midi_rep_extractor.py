@@ -31,13 +31,12 @@ class MidiRepExtractor:
     def __init__(self, filename):
         self.file = MidiFile(filename)
 
-    def print_messages(self):
+    def print_messages(self, track=0):
         """
         Displays all messages in a midi
         :return:
         """
-        mid = MidiFile(self.file)
-        for msg in mid:
+        for msg in self.file.tracks[track]:
             print(msg)
 
     def get_event_array(self, track=None):
@@ -73,18 +72,18 @@ class MidiRepExtractor:
             time += msg.time
             if msg.is_meta:
                 continue
-            if msg.type == MidiRepExtractor.NOTE_ON and msg.velocity != 0:
-                if msg.note in on_notes.keys():
-                    raise Exception('Note turned on twice')
-                note_obj = Note(msg.note, msg.velocity, -1, time)
-                on_notes[msg.note] = note_obj
-                notes.append(note_obj)
-            elif msg.type == MidiRepExtractor.NOTE_OFF or (msg.type == MidiRepExtractor.NOTE_ON and msg.velocity == 0):
+            if msg.type == MidiRepExtractor.NOTE_OFF or (msg.type == MidiRepExtractor.NOTE_ON and (msg.velocity == 0 or msg.note in on_notes.keys())):
                 if msg.note not in on_notes.keys():
-                    raise Exception('Note never turned on before turning off')
+                    continue
                 note_obj = on_notes[msg.note]
                 note_obj.duration = time - note_obj.start_time
                 del on_notes[msg.note]
+            elif msg.type == MidiRepExtractor.NOTE_ON and msg.velocity != 0:
+#                if msg.note in on_notes.keys():
+#                    raise Exception('Note turned on twice')
+                note_obj = Note(msg.note, msg.velocity, -1, time)
+                on_notes[msg.note] = note_obj
+                notes.append(note_obj)
         return notes
 
     def get_note_array(self, track=None):
