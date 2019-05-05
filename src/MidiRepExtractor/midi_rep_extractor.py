@@ -86,6 +86,9 @@ class MidiRepExtractor:
                 del on_notes[msg.note]
         return notes
 
+    def get_ticks_per_beat(self):
+        return self.file.ticks_per_beat
+
     def insert_chronologically_from_end(self, array, element, key):
         index = len(array) - 1
         while index > -1 and key(element) < key(array[index]):
