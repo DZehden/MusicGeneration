@@ -9,7 +9,7 @@ class MidiEvent:
         self.note = note
 
     def __str__(self):
-        return 'Type: ' + self.event_type + ', Velocity: ' + str(self.velocity) + ', Start tick: ' + str(self.start_tick)
+        return 'Note: ' + str(self.note) +', Type: ' + self.event_type + ', Velocity: ' + str(self.velocity) + ', Start tick: ' + str(self.start_tick)
 
 class Note:
     def __init__(self, note, velocity, duration, start_time):
@@ -19,6 +19,9 @@ class Note:
         self.start_time = start_time
 
     def __str__(self):
+        return 'Note: ' + str(self.note) + ', Velocity: ' + str(self.velocity) + ', Duration: ' + str(self.duration) + ', Start time: ' + str(self.start_time)
+
+    def __repr__(self):
         return 'Note: ' + str(self.note) + ', Velocity: ' + str(self.velocity) + ', Duration: ' + str(self.duration) + ', Start time: ' + str(self.start_time)
 
 class MidiRepExtractor:
@@ -55,18 +58,16 @@ class MidiRepExtractor:
             if msg.is_meta:
                 continue
             if msg.type == MidiRepExtractor.NOTE_ON or msg.type == MidiRepExtractor.NOTE_OFF:
-                event = MidiEvent(msg.type, msg.velocity, to_parse[i+1].time, start_tick, msg.note)
-                data.append(event)
                 start_tick += msg.time
+                event = MidiEvent(msg.type, msg.velocity, -1, start_tick, msg.note)
+                data.append(event)
         return data
 
-    def get_note_array(self, track=None):
+    def get_note_array_from_track(self, track):
         notes = []
         on_notes = {}
         time = 0
-        to_parse = self.file
-        if track != None and isinstance(track, int):
-            to_parse = to_parse.tracks[track]
+        to_parse = self.file.tracks[track]
         for i in range(len(to_parse)):
             msg = to_parse[i]
             time += msg.time
@@ -86,8 +87,23 @@ class MidiRepExtractor:
                 del on_notes[msg.note]
         return notes
 
+    def get_note_array(self, track=None):
+        if track != None and isinstance(track, int):
+            return self.get_note_array_from_track(track)
+        else:
+            if self.file.type == 2:
+                raise Exception('Asynchronus track')
+            note_list = []
+            for i in range(self.get_num_tracks()):
+                note_list = [*note_list, *self.get_note_array_from_track(i)]
+            note_list.sort(key=lambda x: x.start_time)
+            return note_list
+
     def get_ticks_per_beat(self):
         return self.file.ticks_per_beat
+
+    def get_num_tracks(self):
+        return len(self.file.tracks)
 
     def insert_chronologically_from_end(self, array, element, key):
         index = len(array) - 1
@@ -95,7 +111,7 @@ class MidiRepExtractor:
             index -= 1
         array.insert(index + 1, element)
 
-    def write_midi_file(self, note_array, file_name):
+    def write_midi_file(self, note_array, file_name, ticks_per_beat):
         event_array = []
         key = lambda x: x.start_tick
         for note in note_array:
@@ -108,11 +124,12 @@ class MidiRepExtractor:
         track = MidiTrack()
         mid.tracks.append(track)
         for i, event in enumerate(event_array):
-            if i != len(event_array) - 1:
-                time = event_array[i+1].start_tick - event.start_tick
+            if i != 0:
+                time = event.start_tick - event_array[i-1].start_tick
             else:
-                time = 0
+                time = event.start_tick
             track.append(Message(event.event_type, note=event.note, velocity=event.velocity, time=time))
+        mid.ticks_per_beat = ticks_per_beat
         mid.save(file_name)
 
     def get_temporal_image(self, resolution=None):
