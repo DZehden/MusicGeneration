@@ -29,7 +29,8 @@ class MidiRepExtractor:
     NOTE_OFF = 'note_off'
 
     def __init__(self, filename):
-        self.file = MidiFile(filename)
+        if filename != None:
+            self.file = MidiFile(filename)
 
     def print_messages(self, track=0):
         """
