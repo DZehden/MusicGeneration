@@ -1,5 +1,6 @@
 import pypianoroll
 import os
+import numpy as np
 
 def midi_to_sparse_matrix(input_path, output_path):
     """
@@ -39,6 +40,38 @@ def parse_all_midis_in_dir(input_dir_path, output_dir_path):
         ipath = os.path.join(input_dir_path, file)
         opath = os.path.join(output_dir_path, ofile)
         midi_to_sparse_matrix(ipath, opath)
+
+
+def get_random_midi_samples(input_dir_path, num_samples):
+    """
+
+    :param input_dir_path: str
+        file path of midis to sample
+    :param num_samples: int
+        number of samples to return
+    :return: list of file paths of midi objects
+    """
+    files = os.listdir(input_dir_path)
+    idxs = np.random.randint(0, len(files), num_samples)
+    file_paths = [files[i] for i in idxs]
+    return file_paths
+
+
+def ndarray_to_midi(arr, output_dir_path, name='output'):
+    """
+    Write a single tracks array representation to midi file
+
+    :param arr: ndarray
+        pianoroll ndarray to convrert
+    :param output_dir_path: str
+        directory to write midi
+    :param name: str
+        name of file to write
+    :return: None
+    """
+    trk = pypianoroll.Track(pianoroll=arr, program=0, name=name)
+    pypianoroll.write(trk, output_dir_path)
+
 
 def load_pianoroll(input_path):
     return pypianoroll.parse(input_path)
