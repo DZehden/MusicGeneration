@@ -111,7 +111,7 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
 
 EPOCHS = 50
 noise_dim = 100
-num_examples_to_generate = 16
+num_examples_to_generate = 1
 seed = tf.random.normal([num_examples_to_generate, noise_dim])
 
 
@@ -140,7 +140,8 @@ def train(dataset, epochs):
         start = time.time()
 
         for image_batch in dataset:
-            resized_in = image_batch.resize((1,384,128,1)) 
+            resized_in = np.resize(image_batch,(1,384,128,1))
+            resized_in = resized_in.astype('float32')
             train_step(resized_in)
         
         generate_and_save_audio(generator, epoch + 1, seed)
@@ -156,12 +157,10 @@ def train(dataset, epochs):
     generate_and_save_audio(generator, epochs, seed)
 
 
-file_index = 0
 def generate_and_save_audio(model, epoch, test_input):
     predictions = model(test_input, training=False)
-    predictions = predictions.reshape((384,128))
-    darray_to_midi(predictions, './output', str(file_index) + '.mid')
-    file_index = file_index + 1 
+    predictions = np.reshape(predictions,(384,128))
+    ndarray_to_midi(predictions, './output/' + str(epoch) + '.mid')
 
 
 
