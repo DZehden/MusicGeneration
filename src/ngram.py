@@ -28,8 +28,7 @@ def get_all_note_lists(root_dir, combine=False):
     return note_lists
 
 class Distribution:
-    def __init__(self, condition):
-        self.condition = condition
+    def __init__(self):
         self.frequency = {}
 
     def add_occurrence(self, event):
@@ -46,3 +45,13 @@ class Distribution:
         for key in support:
             probabilites.append(self.frequency[key] / total)
         return (support, probabilites)
+
+    def total_occurrences(self):
+        total = 0
+        for key in self.frequency.keys():
+            total += self.frequency[key]
+        return total
+
+    def __str__(self):
+        return str(self.frequency)
+
