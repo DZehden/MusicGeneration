@@ -7,8 +7,8 @@ print('Extracting note representation from MIDI files')
 data = get_all_note_lists('../classical_piano/')
 
 print('Parsing notes to make unigram model')
-note_distribution = Distribution(())
-duration_distribution = Distribution(())
+note_distribution = Distribution()
+duration_distribution = Distribution()
 for note_list in data:
     ticks_per_beat = note_list[0]
     for note in note_list[1]:
