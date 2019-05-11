@@ -1,1 +1,1 @@
-from .midi_utils import midi_to_sparse_matrix
+from .midi_utils import convert_midis_to_npz

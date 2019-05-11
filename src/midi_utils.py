@@ -2,60 +2,6 @@ import pypianoroll
 import os
 import numpy as np
 
-def midi_to_sparse_matrix(input_path, output_path):
-    """
-    Parses a midi into an npz csc file
-
-    :param input_path: str
-        absolute path of input file
-    :param output_path: str
-        absolute path of output directory
-    :return: None
-    """
-    if '/' in input_path:
-        fname = input_path.split('/')[-1]
-    else:
-        fname = input_path
-    ofile = '{0}.npz'.format(fname.split('.')[0])
-    opath = os.path.join(output_path, ofile)
-    proll = pypianoroll.parse(input_path)
-    proll.save(opath)
-
-
-def parse_all_midis_in_dir(input_dir_path, output_dir_path):
-    """
-    Parses all midis in a directory into an npz csc file
-
-    :param input_dir_path: str
-        absolute path to directory with midi files
-    :param output_dir_path: str
-        absolute path to output directory
-    :return: None
-    """
-    files = os.listdir(input_dir_path)
-    for file in files:
-        if '.mid' not in file:
-            continue
-        ofile = '{0}.npz'.format(file.split('.')[0])
-        ipath = os.path.join(input_dir_path, file)
-        opath = os.path.join(output_dir_path, ofile)
-        midi_to_sparse_matrix(ipath, opath)
-
-
-def get_random_midi_samples(input_dir_path, num_samples):
-    """
-
-    :param input_dir_path: str
-        file path of midis to sample
-    :param num_samples: int
-        number of samples to return
-    :return: list of file paths of midi objects
-    """
-    files = os.listdir(input_dir_path)
-    idxs = np.random.randint(0, len(files), num_samples)
-    file_paths = [files[i] for i in idxs]
-    return file_paths
-
 
 def ndarray_to_midi(arr, output_dir_path, name='output'):
     """
@@ -70,10 +16,18 @@ def ndarray_to_midi(arr, output_dir_path, name='output'):
     :return: None
     """
     trk = pypianoroll.Track(pianoroll=arr, program=0, name=name)
-    pypianoroll.write(trk, output_dir_path)
+    multi = pypianoroll.Multitrack(tracks=[trk])
+    pypianoroll.write(multi, output_dir_path)
 
 
 def load_pianoroll(input_path):
+    """
+    Convenience method to get pianoroll
+
+    :param input_path: str
+         path to midi
+    :return: pypianoroll.MultiTrack
+    """
     return pypianoroll.parse(input_path)
 
 
@@ -98,3 +52,43 @@ def get_pianoroll_matrix(pianoroll, track=None):
     else:
         print('Pianoroll parameter is not a valid pianoroll object')
     return ret
+
+
+def convert_midis_to_npz(root_dir, output_dir, samples_per_track=1, beats_per_sample=16):
+    """
+    Recursively creates pianoroll samples starting at a root directory and outputs them to a single output directory
+
+    :param root_dir: str
+        path to root of file tree to search for midi files
+    :param output_dir: str
+        path to output directory
+    :param samples_per_track: int
+        number of samples to extract from each midi found
+    :param beats_per_sample: int
+        number of beats to include in each sample
+    :return: None
+    """
+    def get_sample_name(songfile, sid):
+        return songfile.split('.')[0] + '_sample_{0}'.format(sid)
+
+    def get_sample_filename(songfile, sid):
+        return songfile.split('.')[0] + '_sample_{0}.npz'.format(sid)
+
+    time_slices_to_sample = 24 * beats_per_sample
+    for root, dirs, files in os.walk(root_dir):
+        for file in files:
+            fullpath = os.path.join(root, file)
+            f = file.lower()
+            if '.mid' in f:
+                roll = pypianoroll.parse(fullpath)
+                if len(roll.tracks) == 1:
+                    mat = roll.tracks[0].pianoroll
+                    max_start_idx = ((mat.shape[0] - time_slices_to_sample) // 24) * 24
+                    if max_start_idx < 0:
+                        continue
+                    for sample_num in range(samples_per_track):
+                        sample_start_idx = np.random.randint(0, max_start_idx)
+                        sample = mat[sample_start_idx: sample_start_idx + time_slices_to_sample]
+                        sample_track = pypianoroll.Track(pianoroll=sample, name=get_sample_name(file, sample_num))
+                        sample_multi = pypianoroll.Multitrack(tracks=[sample_track])
+                        pypianoroll.save(os.path.join(output_dir, get_sample_filename(file, sample_num)), sample_multi)
