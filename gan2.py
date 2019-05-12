@@ -153,7 +153,6 @@ def train(dataset, epochs):
         print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
 
     # Generate after the final epoch
-    display.clear_output(wait=True)
     generate_and_save_audio(generator, epochs, seed)
 
 
