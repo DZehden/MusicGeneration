@@ -15,5 +15,7 @@ class MusicDataset(Dataset):
         return len(self.filenames)
 
     def __getitem__(self, item):
+        if '.npz' not in self.filenames[item]:
+            print('Found invalid data: {0}'.format(self.filenames[item]))
         roll = pypianoroll.load(os.path.join(self.data_dir, self.filenames[item]))
         return roll.tracks[0].pianoroll
