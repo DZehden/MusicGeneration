@@ -8,6 +8,7 @@ from tensorflow.keras import layers
 import time
 from src.music_dataset import MusicDataset
 from src.midi_utils import ndarray_to_midi
+import pypianoroll
 
 BATCH_SIZE = 1
 
@@ -30,8 +31,8 @@ class MusicGAN:
         """
         gen = MusicGAN.make_generator_model()
         disc = MusicGAN.make_discriminator_model()
-        gen_opt = tf.keras.optimizers.Adam(1e-4)
-        disc_opt = tf.keras.optimizers.Adam(1e-4)
+        gen_opt = tf.keras.optimizers.Adam(1e-2)
+        disc_opt = tf.keras.optimizers.Adam(1e-2)
         self.checkpoint = tf.train.Checkpoint(generator_optimizer=gen_opt,
                                               discriminator_optimizer=disc_opt,
                                               generator=gen,
@@ -193,10 +194,19 @@ class MusicGAN:
         predictions = np.reshape(predictions,(384,128))
         ndarray_to_midi(predictions, self.output_dir + str(epoch) + '.mid')
 
+    def predict_from_midi(self, path_to_midi):
+        mtrack = pypianoroll.parse(path_to_midi)
+        mat = mtrack.tracks[0].pianoroll
+        resized_in = np.resize(mat, (1, 384, 128, 1))
+        resized_in = resized_in.astype('float32')
+        prediction = self.discriminator(resized_in, training=False)
+        return prediction
+
     @staticmethod
     def load_model(checkpoint_dir):
         res = tf.train.Checkpoint.restore(checkpoint_dir)
         return res
+
 
 @tf.function
 def train_step(images, generator, generator_optimizer, discriminator, discriminator_optimizer):
