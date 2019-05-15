@@ -176,7 +176,7 @@ class MusicGAN:
             # Save the model every 15 epochs
             if (epoch + 1) % 100 == 0:
                 self.checkpoint.save(file_prefix = checkpoint_prefix)
-		self.generate_and_save_audio(self.generator, epoch + 1, seed)
+                self.generate_and_save_audio(self.generator, epoch + 1, seed)
             print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
             pred = self.predict_from_midi('./output/1.mid')
             print('Prediction: {0}'.format(pred))
