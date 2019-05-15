@@ -132,8 +132,8 @@ class MusicGAN:
         # real_loss = cross_entropy(tf.ones_like(real_output), real_output)
         # fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
 
-        real_loss = tf.losses.mean_squared_logarithmic_error(tf.ones_like(real_output), real_output)
-        fake_loss = tf.losses.mean_squared_logarithmic_error(tf.zeros_like(fake_output), fake_output)
+        real_loss = tf.keras.losses.KLDivergence()(tf.ones_like(real_output), real_output)
+        fake_loss = tf.keras.losses.KLDivergence()(tf.zeros_like(fake_output), fake_output)
         total_loss = real_loss + fake_loss
         return total_loss
 
@@ -147,7 +147,7 @@ class MusicGAN:
         :return: np.float
         """
         # cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-        return tf.losses.mean_squared_logarithmic_error(tf.zeros_like(fake_output), fake_output)
+        return tf.keras.losses.KLDivergence()(tf.zeros_like(fake_output), fake_output)
 
     def train(self, dataset, epochs):
         """
@@ -165,7 +165,8 @@ class MusicGAN:
             for image_batch in dataset:
                 resized_in = np.resize(image_batch,(1,384,128,1))
                 resized_in = resized_in.astype('float32')
-                train_step(resized_in, self.generator, self.generator_optimizer, self.discriminator, self.discriminator_optimizer)
+                gen_train = epoch % 2 == 0
+                train_step(resized_in, self.generator, self.generator_optimizer, self.discriminator, self.discriminator_optimizer, gen_train)
 
             self.generate_and_save_audio(self.generator, epoch + 1, seed)
 
@@ -209,11 +210,11 @@ class MusicGAN:
 
 
 @tf.function
-def train_step(images, generator, generator_optimizer, discriminator, discriminator_optimizer):
+def train_step(images, generator, generator_optimizer, discriminator, discriminator_optimizer, gen_train=False):
     noise = tf.random.normal([BATCH_SIZE, noise_dim])
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-        generated_images = generator(noise, training=True)
+        generated_images = generator(noise, training=gen_train)
 
         real_output = discriminator(images, training=True)
         fake_output = discriminator(generated_images, training=True)
@@ -221,9 +222,12 @@ def train_step(images, generator, generator_optimizer, discriminator, discrimina
         gen_loss = MusicGAN.generator_loss(discriminator, fake_output)
         disc_loss = MusicGAN.discriminator_loss(discriminator, real_output, fake_output)
 
-    gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
-    gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
+        gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
+        gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
 
-    generator_optimizer.apply_gradients(zip(gradients_of_generator, generator.trainable_variables))
+    if gen_train:
+        generator_optimizer.apply_gradients(zip(gradients_of_generator, generator.trainable_variables))
     discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
+
+
 
