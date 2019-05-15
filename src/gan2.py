@@ -168,7 +168,7 @@ class MusicGAN:
             for image_batch in dataset:
                 resized_in = np.resize(image_batch,(1,384,128,1))
                 resized_in = resized_in.astype('float32')
-                gen_train = epoch % 2 == 0
+                gen_train = 1
                 train_step(resized_in, self.generator, self.generator_optimizer, self.discriminator, self.discriminator_optimizer, gen_train)
 
             #self.generate_and_save_audio(self.generator, epoch + 1, seed)
