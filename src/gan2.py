@@ -31,8 +31,8 @@ class MusicGAN:
         """
         gen = MusicGAN.make_generator_model()
         disc = MusicGAN.make_discriminator_model()
-        gen_opt = tf.keras.optimizers.Adam(1e-2)
-        disc_opt = tf.keras.optimizers.Adam(1e-2)
+        gen_opt = tf.keras.optimizers.Adam(1e-4)
+        disc_opt = tf.keras.optimizers.Adam(1e-4)
         self.checkpoint = tf.train.Checkpoint(generator_optimizer=gen_opt,
                                               discriminator_optimizer=disc_opt,
                                               generator=gen,
@@ -109,11 +109,11 @@ class MusicGAN:
         model.add(layers.Dropout(0.3))
 
         model.add(layers.Conv2D(128, (4, 4), strides=(4, 4), padding='same'))
-        model.add(layers.LeakyReLU())
+        # model.add(layers.LeakyReLU())
         model.add(layers.Dropout(0.3))
 
         model.add(layers.Flatten())
-        model.add(layers.Dense(1))
+        model.add(layers.Dense(1, activation='sigmoid'))
 
         return model
 
@@ -134,6 +134,8 @@ class MusicGAN:
 
         real_loss = tf.keras.losses.KLDivergence()(tf.ones_like(real_output), real_output)
         fake_loss = tf.keras.losses.KLDivergence()(tf.zeros_like(fake_output), fake_output)
+        #real_loss = tf.keras.losses.mean_squared_logarithmic_error(tf.ones_like(real_output), real_output)
+        #fake_loss = tf.keras.losses.mean_squared_logarithmic_error(tf.zeros_like(fake_output), fake_output)
         total_loss = real_loss + fake_loss
         return total_loss
 
@@ -148,6 +150,7 @@ class MusicGAN:
         """
         # cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         return tf.keras.losses.KLDivergence()(tf.zeros_like(fake_output), fake_output)
+        #return tf.keras.losses.mean_squared_logarithmic_error(tf.zeros_like(fake_output), fake_output)
 
     def train(self, dataset, epochs):
         """
@@ -175,6 +178,8 @@ class MusicGAN:
                 self.checkpoint.save(file_prefix = checkpoint_prefix)
 
             print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
+            pred = self.predict_from_midi('./output/1.mid')
+            print('Prediction: {0}'.format(pred))
 
         # Generate after the final epoch
         self.generate_and_save_audio(self.generator, epochs, seed)
