@@ -80,7 +80,12 @@ def convert_midis_to_npz(root_dir, output_dir, samples_per_track=1, beats_per_sa
             fullpath = os.path.join(root, file)
             f = file.lower()
             if '.mid' in f:
-                roll = pypianoroll.parse(fullpath)
+                try:
+                    roll = pypianoroll.parse(fullpath)
+                except Exception as e:
+                    print(e)
+                    print('Unable to parse {0}: continuing...'.format(fullpath))
+                    continue
                 if len(roll.tracks) == 1:
                     mat = roll.tracks[0].pianoroll
                     max_start_idx = ((mat.shape[0] - time_slices_to_sample) // 24) * 24
