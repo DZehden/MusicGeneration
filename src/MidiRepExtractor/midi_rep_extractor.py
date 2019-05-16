@@ -12,11 +12,12 @@ class MidiEvent:
         return 'Note: ' + str(self.note) +', Type: ' + self.event_type + ', Velocity: ' + str(self.velocity) + ', Start tick: ' + str(self.start_tick)
 
 class Note:
-    def __init__(self, note, velocity, duration, start_time):
+    def __init__(self, note, velocity, duration, start_time, delta_time):
         self.note = note
         self.velocity = velocity
         self.duration = duration
         self.start_time = start_time
+        self.delta_time = delta_time
 
     def __str__(self):
         return 'Note: ' + str(self.note) + ', Velocity: ' + str(self.velocity) + ', Duration: ' + str(self.duration) + ', Start time: ' + str(self.start_time)
@@ -82,9 +83,14 @@ class MidiRepExtractor:
             elif msg.type == MidiRepExtractor.NOTE_ON and msg.velocity != 0:
 #                if msg.note in on_notes.keys():
 #                    raise Exception('Note turned on twice')
-                note_obj = Note(msg.note, msg.velocity, -1, time)
+                note_obj = Note(msg.note, msg.velocity, -1, time, -1)
                 on_notes[msg.note] = note_obj
                 notes.append(note_obj)
+        for i, note in enumerate(notes):
+            if i == 0:
+                note.delta_time = note.start_time
+            else:
+                note.delta_time = note.start_time - notes[i - 1].start_time
         return notes
 
     def get_note_array(self, track=None):

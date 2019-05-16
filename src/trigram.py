@@ -4,12 +4,13 @@ from ngram import get_all_note_lists, Distribution
 from MidiRepExtractor import MidiRepExtractor, Note
 
 print('Extracting note representation from MIDI files')
-data = get_all_note_lists('../classical_piano/')
+data = get_all_note_lists('../nottingham-dataset/MIDI/melody/')
 
 print('Parsing notes to make trigram model')
+all_durations = set()
 note_distributions = {}
 duration_distributions = {}
-hist_size = 2
+hist_size = 3
 for note_list in data:
     ticks_per_beat = note_list[0]
     note_hist = []
@@ -20,6 +21,7 @@ for note_list in data:
             note_distributions[(*note_hist,)] = Distribution()
         note_distributions[(*note_hist,)].add_occurrence(note.note)
         duration = note.duration / ticks_per_beat
+        all_durations.add(duration)
         if (*duration_hist,) not in duration_distributions.keys():
             duration_distributions[(*duration_hist,)] = Distribution()
         duration_distributions[(*duration_hist,)].add_occurrence(duration)
@@ -52,7 +54,7 @@ for i in range(100):
         # Immediately after last note is played
         start_tick = note_list[i - 1].start_time + note_list[i - 1].duration
     # Constant velocity for simplicity
-    note_list.append(Note(note, 40, duration, start_tick))
+    note_list.append(Note(note, 40, duration, start_tick, -1))
 
     # Edit Histories
     note_hist.append(note)
@@ -64,5 +66,8 @@ for i in range(100):
 
 print('Store song as MIDI file')
 extractor = MidiRepExtractor(None)
-extractor.write_midi_file(note_list, 'trigram_0.mid', 240)
+extractor.write_midi_file(note_list, '4gram_0.mid', 240)
 print('Done!')
+
+print('Durations:')
+print(all_durations)
