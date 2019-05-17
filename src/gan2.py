@@ -12,8 +12,8 @@ import pypianoroll
 
 BATCH_SIZE = 1
 
-checkpoint_dir = './training_checkpoints'
-checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
+#checkpoint_dir = './training_checkpoints'
+#checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
 
 noise_dim = 100
 num_examples_to_generate = 1
@@ -29,6 +29,8 @@ class MusicGAN:
         :param load_model: boolean
             flag indicating whether or not to load model from checkpoint
         """
+        self.checkpoint_dir = checkpoint_dir
+        self.checkpoint_prefix = os.path.join(self.checkpoint_dir, "ckpt")
         gen = MusicGAN.make_generator_model()
         disc = MusicGAN.make_discriminator_model()
         gen_opt = tf.keras.optimizers.Adam(1e-4)
@@ -37,9 +39,13 @@ class MusicGAN:
                                               discriminator_optimizer=disc_opt,
                                               generator=gen,
                                               discriminator=disc)
-        self.chkpt_man = tf.train.CheckpointManager(self.checkpoint, checkpoint_dir, max_to_keep=3)
+        self.chkpt_man = tf.train.CheckpointManager(self.checkpoint, self.checkpoint_dir, max_to_keep=3)
         if load_model:
             self.checkpoint.restore(self.chkpt_man.latest_checkpoint)
+            print('Loaded checkpoint')
+            print(self.chkpt_man.latest_checkpoint)
+        else:
+            print('No checkpoint loaded')
         self.generator = gen
         self.discriminator = disc
         self.generator_optimizer = gen_opt
@@ -174,12 +180,14 @@ class MusicGAN:
             #self.generate_and_save_audio(self.generator, epoch + 1, seed)
 
             # Save the model every 15 epochs
-            if (epoch + 1) % 100 == 0:
-                self.checkpoint.save(file_prefix = checkpoint_prefix)
+            if (epoch + 1) % 200 == 0:
+                self.checkpoint.save(file_prefix = self.checkpoint_prefix)
                 self.generate_and_save_audio(self.generator, epoch + 1, seed)
+                pred = self.predict_from_midi(self.output_dir+str(epoch+1)+'.mid')
+                print('Prediction on ' + str(epoch + 1) + '.mid'+ ': {0}'.format(pred))
             print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
-            pred = self.predict_from_midi('./output/1.mid')
-            print('Prediction: {0}'.format(pred))
+            #pred = self.predict_from_midi('./output/1.mid')
+            #print('Prediction: {0}'.format(pred))
 
         # Generate after the final epoch
         self.generate_and_save_audio(self.generator, epochs, seed)
