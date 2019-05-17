@@ -97,3 +97,18 @@ def convert_midis_to_npz(root_dir, output_dir, samples_per_track=1, beats_per_sa
                         sample_track = pypianoroll.Track(pianoroll=sample, name=get_sample_name(file, sample_num))
                         sample_multi = pypianoroll.Multitrack(tracks=[sample_track])
                         pypianoroll.save(os.path.join(output_dir, get_sample_filename(file, sample_num)), sample_multi)
+
+
+def npz_to_midi(path_to_npz, output_dir):
+    """
+    Converts an npz file to a midi
+
+    :param path_to_npz: str
+         path to npz file to convert
+    :param output_dir:
+         path to directory where midi will be stored
+    :return: None
+    """
+    filename = path_to_npz.split('/')[-1].split('.')[0]
+    roll = pypianoroll.load(path_to_npz)
+    pypianoroll.write(roll, os.path.join(output_dir, filename + '.mid'))
