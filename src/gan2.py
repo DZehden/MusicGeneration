@@ -142,7 +142,7 @@ class MusicGAN:
         return cross_entropy(tf.ones_like(fake_output), fake_output)
 
     def get_train_bools(self, fake_res, real_res, epoch):
-        if epoch == 0 and not load_model:
+        if epoch == 0 and not self.load_model:
             disc_train = True
             gen_train = True
             return disc_train, gen_train
