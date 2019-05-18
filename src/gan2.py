@@ -141,6 +141,8 @@ class MusicGAN:
         """
         cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         return cross_entropy(tf.ones_like(fake_output), fake_output)
+
+
     def train(self, dataset, epochs):
         """
         Trains model on a dataset for a certain number of epochs
@@ -153,6 +155,8 @@ class MusicGAN:
         """
         gen_train = 1
         count = 0
+        train_result = 0.5
+
         for epoch in range(epochs):
             start = time.time()
             if (count == 25):
@@ -164,7 +168,10 @@ class MusicGAN:
             for image_batch in dataset:
                 resized_in = np.resize(image_batch, (1, 384, 128, 1))
                 resized_in = resized_in.astype('float32')
-                self.train_step(resized_in, self.generator, self.generator_optimizer, serlf.discriminator, self.discriminator_optimizer, gen_train)
+
+                disc_train = train_result > 0.5
+                train_result = self.train_step(resized_in, disc_train)
+
             # Save the model every 200 epochs
             if (epoch + 1) % 50 == 0:
                 self.checkpoint.save(file_prefix = self.checkpoint_prefix)
@@ -207,29 +214,41 @@ class MusicGAN:
         res = tf.train.Checkpoint.restore(checkpoint_dir)
         return res
 
+    def train_step(self, images, disc_train=False):
+        """
+        Performs a single step of gradient descent on a generator and discriminator
 
+        :param images: Dataset
+            Input dataset (usually a list of or singular ndarray representing a pianoroll)
+        :param generator: tf.keras.Sequential
+             CNN used to generate music
+        :param generator_optimizer: tf.keras.optimizers.Adam
+             Function used to optimize weight of generator
+        :param discriminator: tf.keras.Sequential
+             CNN used to classify music as 'real' or 'fake'
+        :param discriminator_optimizer: tf.keras.optimizers.Adam
+             Function used to optimize weights of discriminator
+        :param disc_train: bool
+             Flag indicating whether or not to train the discriminator this step
+        :return: None
+        """
+        noise = tf.random.normal([BATCH_SIZE, noise_dim])
 
-#@tf.function
-    def train_step(self, audio, generator, generator_optimizer, discriminator, discriminator_optimizer, gen_train):
-        noise = tf.random.normal([BATCH_SIZE, noise_dim]) 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generated_audio = generator(noise, training=True)
-            real_output = discriminator(audio, training=True)
-            fake_output = discriminator(generated_audio, training=True)
-            print('     Current prediction on training data: {} '.format(real_output))
-            print('     Current prediction on generated data: {} '.format(fake_output))
+            generated_images = self.generator(noise, training=True)
+
+            real_output = self.discriminator(images, training=disc_train)
+            fake_output = self.discriminator(generated_images, training=disc_train)
+
             gen_loss = MusicGAN.generator_loss(fake_output)
             disc_loss = MusicGAN.discriminator_loss(real_output, fake_output)
-        if (gen_train):
-            gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
-            generator_optimizer.apply_gradients(zip(gradients_of_generator, generator.trainable_variables))
-        else:
-            gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
-            discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
-    #if gen_train:
-        #generator_optimizer.apply_gradients(zip(gradients_of_generator, generator.trainable_variables))
-        #discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
 
+            gradients_of_generator = gen_tape.gradient(gen_loss, self.generator.trainable_variables)
+            if disc_train:
+                gradients_of_discriminator = disc_tape.gradient(disc_loss, self.discriminator.trainable_variables)
 
-
+        self.generator_optimizer.apply_gradients(zip(gradients_of_generator, self.generator.trainable_variables))
+        if disc_train:
+            self.discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, self.discriminator.trainable_variables))
+        return fake_output.numpy()[0, 0]
 

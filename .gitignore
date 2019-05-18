@@ -3,3 +3,6 @@ MusicGeneration/
 *.swp
 130000_Pop_Rock_Classical_Videogame_EDM_MIDI_Archive*
 */__pycache__/*
+output/
+.ipynb_checkpoints/
+src/.ipynb_checkpoints/
