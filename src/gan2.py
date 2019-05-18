@@ -141,7 +141,7 @@ class MusicGAN:
         return cross_entropy(tf.ones_like(fake_output), fake_output)
 
     def get_train_bools(self, fake_res, real_res, epoch):
-        if epoch % 50 == 0:
+        if epoch % 15 == 0:
             disc_train = True
             gen_train = True
             return disc_train, gen_train
@@ -173,9 +173,9 @@ class MusicGAN:
                 resized_in = resized_in.astype('float32')
 
                 fake_res, real_res = self.train_step(resized_in, disc_train, gen_train)
-                disc_train, gen_train = self.get_train_bools(fake_res, real_res)
+                disc_train, gen_train = self.get_train_bools(fake_res, real_res, epoch)
 
-                # print('Training discriminator: {0} (real_pred={1}, fake_pred, {2})'.format(disc_train, real_res, fake_res))
+                print('Training discriminator: {0} (real_pred={1}, fake_pred, {2})'.format(disc_train, real_res, fake_res))
 
             # Save the model every 200 epochs
             if (epoch + 1) % 50 == 0:
@@ -244,14 +244,14 @@ class MusicGAN:
         :return: None
         """
         noise = tf.random.normal([BATCH_SIZE, noise_dim])
-
+        
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generated_images = self.generator(noise, training=gen_train)
+            generated_images = self.generator(noise, training=True)
 
-            real_output = self.discriminator(images, training=disc_train)
-            fake_output = self.discriminator(generated_images, training=disc_train)
-
+            real_output = self.discriminator(images, training=True)
+            fake_output = self.discriminator(generated_images, training=True)
+            #print('Prediction on real: {}, prediction on generated: {}'.format(real_output, fake_output))
             gen_loss = MusicGAN.generator_loss(fake_output)
             disc_loss = MusicGAN.discriminator_loss(real_output, fake_output)
 
