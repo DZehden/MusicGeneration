@@ -31,7 +31,7 @@ class MusicGAN:
         self.checkpoint_prefix = os.path.join(self.checkpoint_dir, "ckpt")
         gen = MusicGAN.make_generator_model()
         disc = MusicGAN.make_discriminator_model()
-        gen_opt = tf.keras.optimizers.Adam(1e-2)
+        gen_opt = tf.keras.optimizers.Adam(1e-4)
         disc_opt = tf.keras.optimizers.Adam(1e-4)
         self.checkpoint = tf.train.Checkpoint(generator_optimizer=gen_opt,
                                               discriminator_optimizer=disc_opt,
@@ -49,6 +49,7 @@ class MusicGAN:
         self.generator_optimizer = gen_opt
         self.discriminator_optimizer = disc_opt
         self.output_dir = output_dir
+        self.epochs = 0
 
     @staticmethod
     def make_generator_model():
@@ -141,13 +142,13 @@ class MusicGAN:
         return cross_entropy(tf.ones_like(fake_output), fake_output)
 
     def get_train_bools(self, fake_res, real_res, epoch):
-        if epoch % 15 == 0:
+        if epoch == 0:
             disc_train = True
             gen_train = True
             return disc_train, gen_train
         disc_train = False
         gen_train = True
-        if fake_res > 0.5:
+        if fake_res >= 0.5:
             disc_train = True
             gen_train = False
             return disc_train, gen_train  # Train discriminator only
@@ -166,16 +167,21 @@ class MusicGAN:
         """
         disc_train = True
         gen_train = True
-        for epoch in range(epochs):
+        for epoch in range(self.epochs, self.epochs + epochs):
             start = time.time()
+            fake_avg = 0
+            real_avg = 0
+            disc_train, gen_train = self.get_train_bools(fake_avg, real_avg, epoch)
             for image_batch in dataset:
                 resized_in = np.resize(image_batch, (1, 384, 128, 1))
                 resized_in = resized_in.astype('float32')
 
                 fake_res, real_res = self.train_step(resized_in, disc_train, gen_train)
-                disc_train, gen_train = self.get_train_bools(fake_res, real_res, epoch)
+                fake_avg += fake_res / len(dataset)
+                real_avg += real_res / len(dataset)
 
-                print('Training discriminator: {0} (real_pred={1}, fake_pred, {2})'.format(disc_train, real_res, fake_res))
+
+                # print('Training discriminator: {0} (real_pred={1}, fake_pred, {2})'.format(disc_train, real_res, fake_res))
 
             # Save the model every 200 epochs
             if (epoch + 1) % 50 == 0:
@@ -184,6 +190,8 @@ class MusicGAN:
                 #pred = self.predict_from_midi(self.output_dir+'50.mid')
                 #print('Prediction on ' + '50.mid'+ ': {0}'.format(pred))
             print('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
+            print('Average real prediction: {0}, Average fake prediction: {1}'.format(real_avg, fake_avg))
+            self.epochs += 1
             #pred = self.predict_from_midi('./output/1.mid')
             #print('Prediction: {0}'.format(pred))
 
@@ -244,13 +252,19 @@ class MusicGAN:
         :return: None
         """
         noise = tf.random.normal([BATCH_SIZE, noise_dim])
-        
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_images = self.generator(noise, training=True)
+            # arr = np.reshape(generated_images, (384, 128))
+            # ndarray_to_midi(arr, './output/train_sample_gen.mid')
+            #
+            # reroll = pypianoroll.parse('./output/train_sample_gen.mid', beat_resolution=24)
+            # mat = reroll.tracks[0].pianoroll
+            # generated_matrix = np.resize(mat, 1, 384, 128, 1)
 
             real_output = self.discriminator(images, training=True)
             fake_output = self.discriminator(generated_images, training=True)
+
             #print('Prediction on real: {}, prediction on generated: {}'.format(real_output, fake_output))
             gen_loss = MusicGAN.generator_loss(fake_output)
             disc_loss = MusicGAN.discriminator_loss(real_output, fake_output)
