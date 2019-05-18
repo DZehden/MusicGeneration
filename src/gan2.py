@@ -181,8 +181,8 @@ class MusicGAN:
             if (epoch + 1) % 50 == 0:
                 self.checkpoint.save(file_prefix = self.checkpoint_prefix)
                 self.generate_and_save_audio(self.generator, epoch + 1, seed)
-                pred = self.predict_from_midi(self.output_dir+'50.mid')
-                print('Prediction on ' + '50.mid'+ ': {0}'.format(pred))
+                #pred = self.predict_from_midi(self.output_dir+'50.mid')
+                #print('Prediction on ' + '50.mid'+ ': {0}'.format(pred))
             print('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
             #pred = self.predict_from_midi('./output/1.mid')
             #print('Prediction: {0}'.format(pred))
