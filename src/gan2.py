@@ -140,10 +140,16 @@ class MusicGAN:
         cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         return cross_entropy(tf.ones_like(fake_output), fake_output)
 
-    def get_train_bools(self, fake_res, real_res):
+    def get_train_bools(self, fake_res, real_res, epoch):
+        if epoch % 50 == 0:
+            disc_train = True
+            gen_train = True
+            return disc_train, gen_train
         disc_train = False
         gen_train = True
         if fake_res > 0.5:
+            disc_train = True
+            gen_train = False
             return disc_train, gen_train  # Train discriminator only
         else:
             return disc_train, gen_train  # Train generator
@@ -168,9 +174,7 @@ class MusicGAN:
 
                 fake_res, real_res = self.train_step(resized_in, disc_train, gen_train)
                 disc_train, gen_train = self.get_train_bools(fake_res, real_res)
-                if epoch % 50 == 0:
-                    disc_train = True
-                    gen_train = True
+
                 # print('Training discriminator: {0} (real_pred={1}, fake_pred, {2})'.format(disc_train, real_res, fake_res))
 
             # Save the model every 200 epochs
