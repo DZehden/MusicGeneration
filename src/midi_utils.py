@@ -19,6 +19,22 @@ def ndarray_to_midi(arr, output_dir_path, name='output'):
     multi = pypianoroll.Multitrack(tracks=[trk])
     pypianoroll.write(multi, output_dir_path)
 
+def ndarray_to_npz(arr, output_dir_path, name='output'):
+    """
+    Write a single tracks array representation to npz file
+
+    :param arr: ndarray
+        pianoroll ndarray to convrert
+    :param output_dir_path: str
+        directory to write midi
+    :param name: str
+        name of file to write
+    :return: None
+    """
+    trk = pypianoroll.Track(pianoroll=arr, program=0, name=name)
+    multi = pypianoroll.Multitrack(tracks=[trk])
+    pypianoroll.save(output_dir_path, multi)
+
 
 def load_pianoroll(input_path):
     """

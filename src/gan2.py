@@ -6,11 +6,9 @@ import numpy as np
 import os
 from tensorflow.keras import layers
 import time
-from src.midi_utils import ndarray_to_midi
+from src.midi_utils import ndarray_to_midi, ndarray_to_npz
 import pypianoroll
 import datetime
-
-BATCH_SIZE = 1
 
 noise_dim = 100
 num_examples_to_generate = 1
@@ -18,7 +16,7 @@ seed = tf.random.normal([num_examples_to_generate, noise_dim])
 
 
 class MusicGAN:
-    def __init__(self, checkpoint_dir, output_dir, load_model=False):
+    def __init__(self, checkpoint_dir, output_dir, batch_size, load_model=False):
         """
         Creates a MusicGAN Object
 
@@ -27,7 +25,8 @@ class MusicGAN:
         :param load_model: boolean
             flag indicating whether or not to load model from checkpoint
         """
-        self.load_model = load_model
+
+        self.batch_size = batch_size
         self.checkpoint_dir = checkpoint_dir
         self.checkpoint_prefix = os.path.join(self.checkpoint_dir, "ckpt")
         gen = MusicGAN.make_generator_model()
@@ -176,7 +175,7 @@ class MusicGAN:
             # train_str = 'Training ' + ('discrminator, ' if disc_train else '') + ('generator' if gen_train else '')
             # print(train_str)
             for image_batch in dataset:
-                resized_in = np.resize(image_batch, (1, 384, 128, 1))
+                resized_in = np.resize(image_batch, (1, 384, 128, len(dataset)))
                 resized_in = resized_in.astype('float32')
 
                 fake_res, real_res = self.train_step(resized_in, disc_train, gen_train)
@@ -225,11 +224,27 @@ class MusicGAN:
         prediction = self.discriminator(resized_in, training=False)
         return prediction
 
+    def predict_from_npz(self, path_to_npz):
+        mtrack = pypianoroll.load(path_to_npz)
+        mat = mtrack.tracks[0].pianoroll
+        resized_in = np.resize(mat, (1, 384, 128, 1))
+        resized_in = resized_in.astype('float32')
+        prediction = self.discriminator(resized_in, training=False)
+        return prediction
+
     def generate_midi(self, output_path):
-        noise = tf.random.normal([BATCH_SIZE, noise_dim])
-        song = self.generator(noise, training=False)
+        noise = tf.random.normal([1, noise_dim])
+        song = self.generator(noise, training=False)[0]
         song = np.reshape(song, (384, 128))
+        print(song.shape)
         ndarray_to_midi(song, output_path)
+
+    def generate_npz(self, output_path):
+        noise = tf.random.normal([1, noise_dim])
+        song = self.generator(noise, training=False)[0]
+        song = np.reshape(song, (384, 128))
+        print(song.shape)
+        ndarray_to_npz(song, output_path)
 
     @staticmethod
     def load_model(checkpoint_dir):
@@ -254,7 +269,7 @@ class MusicGAN:
              Flag indicating whether or not to train the discriminator this step
         :return: None
         """
-        noise = tf.random.normal([BATCH_SIZE, noise_dim])
+        noise = tf.random.normal([self.batch_size, noise_dim])
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_images = self.generator(noise, training=True)
