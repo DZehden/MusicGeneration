@@ -224,10 +224,13 @@ class MusicGAN:
         """
         predictions = model(test_input, training=False)
         predictions = np.reshape(predictions,(384,128))
+        predictions = (predictions + 1) * 63.5
+        predictions = predictions.astype('uint8')
         ndarray_to_midi(predictions, self.output_dir + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")) + '_epoch_' + str(epoch) + '.mid')
         ndarray_to_npz(predictions, self.output_dir + str(datetime.datetime.now().strftime("%Y_m%_d_%H_%M")) + '_epoch_' + str(
             epoch) + '.npz')
 
+    # TODO: Update these functions to scale data
     def predict_from_midi(self, path_to_midi):
         mtrack = pypianoroll.parse(path_to_midi)
         mat = mtrack.tracks[0].pianoroll
@@ -248,14 +251,12 @@ class MusicGAN:
         noise = tf.random.normal([1, noise_dim])
         song = self.generator(noise, training=False)[0]
         song = np.reshape(song, (384, 128))
-        print(song.shape)
         ndarray_to_midi(song, output_path)
 
     def generate_npz(self, output_path):
         noise = tf.random.normal([1, noise_dim])
         song = self.generator(noise, training=False)[0]
         song = np.reshape(song, (384, 128))
-        print(song.shape)
         ndarray_to_npz(song, output_path)
 
     @staticmethod
