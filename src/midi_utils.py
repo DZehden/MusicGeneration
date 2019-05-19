@@ -94,6 +94,7 @@ def convert_midis_to_npz(root_dir, output_dir, samples_per_track=1, beats_per_sa
                     for sample_num in range(samples_per_track):
                         sample_start_idx = np.random.randint(0, max_start_idx)
                         sample = mat[sample_start_idx: sample_start_idx + time_slices_to_sample]
+                        sample[sample > 0] = 127
                         sample_track = pypianoroll.Track(pianoroll=sample, name=get_sample_name(file, sample_num))
                         sample_multi = pypianoroll.Multitrack(tracks=[sample_track])
                         pypianoroll.save(os.path.join(output_dir, get_sample_filename(file, sample_num)), sample_multi)
