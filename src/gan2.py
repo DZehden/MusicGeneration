@@ -186,7 +186,7 @@ class MusicGAN:
                 # print('Training discriminator: {0} (real_pred={1}, fake_pred, {2})'.format(disc_train, real_res, fake_res))
 
             # Save the model every 200 epochs
-            if (epoch + 1) % 50 == 0:
+            if (epoch + 1) % 250 == 0:
                 self.checkpoint.save(file_prefix = self.checkpoint_prefix)
                 self.generate_and_save_audio(self.generator, epoch + 1, seed)
                 #pred = self.predict_from_midi(self.output_dir+'50.mid')
@@ -215,6 +215,8 @@ class MusicGAN:
         predictions = model(test_input, training=False)
         predictions = np.reshape(predictions,(384,128))
         ndarray_to_midi(predictions, self.output_dir + str(datetime.datetime.now().strftime("%H_%M")) + '_epoch_' + str(epoch) + '.mid')
+        ndarray_to_npz(predictions, self.output_dir + str(datetime.datetime.now().strftime("%H_%M")) + '_epoch_' + str(
+            epoch) + '.npz')
 
     def predict_from_midi(self, path_to_midi):
         mtrack = pypianoroll.parse(path_to_midi)
