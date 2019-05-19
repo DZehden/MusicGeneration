@@ -32,7 +32,7 @@ class MusicGAN:
         gen = MusicGAN.make_generator_model()
         disc = MusicGAN.make_discriminator_model()
         gen_opt = tf.keras.optimizers.Adam(1e-4)
-        disc_opt = tf.keras.optimizers.Adam(1e-4)
+        disc_opt = tf.keras.optimizers.Adam(1e-6)
         self.checkpoint = tf.train.Checkpoint(generator_optimizer=gen_opt,
                                               discriminator_optimizer=disc_opt,
                                               generator=gen,
@@ -150,7 +150,15 @@ class MusicGAN:
             return disc_train, gen_train
         disc_train = False
         gen_train = True
-        if fake_res >= 0.5:
+        if fake_res >= 0.6 and real_res >= 0.9:
+            return False, True
+        if fake_res >= 0.5 and real_res >= 0.5:
+            return True, True
+        elif real_res >= 0.5:
+            disc_train = False
+            gen_train = True
+            return disc_train, gen_train
+        elif fake_res >= 0.5:
             disc_train = True
             gen_train = False
             return disc_train, gen_train  # Train discriminator only
@@ -166,14 +174,16 @@ class MusicGAN:
         :param epochs: int
             number of epochs to train for
         :return: None
-        """
+        """ 
+        fake_avg = 0
+        real_avg = 0
         for epoch in range(self.epochs, self.epochs + epochs):
             start = time.time()
-            fake_avg = 0
-            real_avg =0
             disc_train, gen_train = self.get_train_bools(fake_avg, real_avg, epoch)
-            # train_str = 'Training ' + ('discrminator, ' if disc_train else '') + ('generator' if gen_train else '')
-            # print(train_str)
+            train_str = 'Training ' + ('discrminator, ' if disc_train else '') + ('generator' if gen_train else '')
+            print(train_str)
+            fake_avg = 0
+            real_avg = 0
             for image_batch in dataset:
                 resized_in = np.resize(image_batch, (1, 384, 128, len(dataset)))
                 resized_in = resized_in.astype('float32')
@@ -214,8 +224,8 @@ class MusicGAN:
         """
         predictions = model(test_input, training=False)
         predictions = np.reshape(predictions,(384,128))
-        ndarray_to_midi(predictions, self.output_dir + str(datetime.datetime.now().strftime("%H_%M")) + '_epoch_' + str(epoch) + '.mid')
-        ndarray_to_npz(predictions, self.output_dir + str(datetime.datetime.now().strftime("%H_%M")) + '_epoch_' + str(
+        ndarray_to_midi(predictions, self.output_dir + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")) + '_epoch_' + str(epoch) + '.mid')
+        ndarray_to_npz(predictions, self.output_dir + str(datetime.datetime.now().strftime("%Y_m%_d_%H_%M")) + '_epoch_' + str(
             epoch) + '.npz')
 
     def predict_from_midi(self, path_to_midi):
