@@ -144,7 +144,7 @@ class MusicGAN:
         return cross_entropy(tf.ones_like(fake_output), fake_output)
 
     def get_train_bools(self, fake_res, real_res, epoch):
-        if (epoch == 0) and (not self.model_loaded):
+        if (epoch < 10) and (not self.model_loaded):
             disc_train = True
             gen_train = True
             return disc_train, gen_train
@@ -196,7 +196,7 @@ class MusicGAN:
                 # print('Training discriminator: {0} (real_pred={1}, fake_pred, {2})'.format(disc_train, real_res, fake_res))
 
             # Save the model every 200 epochs
-            if (epoch + 1) % 250 == 0:
+            if (epoch + 1) % 30 == 0:
                 self.checkpoint.save(file_prefix = self.checkpoint_prefix)
                 self.generate_and_save_audio(self.generator, epoch + 1, seed)
                 #pred = self.predict_from_midi(self.output_dir+'50.mid')
@@ -224,7 +224,8 @@ class MusicGAN:
         """
         predictions = model(test_input, training=False)
         predictions = np.reshape(predictions,(384,128))
-        predictions = (predictions + 1) * 63.5
+        print('Max: {0}, min {1}, non_zero elements: {2} out of {3}'.format(predictions.max(), predictions.min(), len(predictions[predictions > 0]), 384 * 128))
+        predictions = predictions * 127
         predictions = predictions.astype('uint8')
         ndarray_to_midi(predictions, self.output_dir + str(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")) + '_epoch_' + str(epoch) + '.mid')
         ndarray_to_npz(predictions, self.output_dir + str(datetime.datetime.now().strftime("%Y_m%_d_%H_%M")) + '_epoch_' + str(
