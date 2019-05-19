@@ -18,4 +18,7 @@ class MusicDataset(Dataset):
         if '.npz' not in self.filenames[item]:
             print('Found invalid data: {0}'.format(self.filenames[item]))
         roll = pypianoroll.load(os.path.join(self.data_dir, self.filenames[item]))
-        return roll.tracks[0].pianoroll
+        mat = roll.tracks[0].pianoroll
+        mat = mat.astype('float32')
+        mat = (mat - 64.5) / 64.5
+        return mat

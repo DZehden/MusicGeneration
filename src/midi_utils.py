@@ -110,7 +110,7 @@ def convert_midis_to_npz(root_dir, output_dir, samples_per_track=1, beats_per_sa
                     for sample_num in range(samples_per_track):
                         sample_start_idx = np.random.randint(0, max_start_idx)
                         sample = mat[sample_start_idx: sample_start_idx + time_slices_to_sample]
-                        sample[sample > 0] = 127
+                        #sample[sample > 0] = 127
                         sample_track = pypianoroll.Track(pianoroll=sample, name=get_sample_name(file, sample_num))
                         sample_multi = pypianoroll.Multitrack(tracks=[sample_track])
                         pypianoroll.save(os.path.join(output_dir, get_sample_filename(file, sample_num)), sample_multi)
@@ -129,3 +129,10 @@ def npz_to_midi(path_to_npz, output_dir):
     filename = path_to_npz.split('/')[-1].split('.')[0]
     roll = pypianoroll.load(path_to_npz)
     pypianoroll.write(roll, os.path.join(output_dir, filename + '.mid'))
+
+
+def convert_to_capped_midi(path_to_midi, output_dir):
+    roll = pypianoroll.parse(path_to_midi)
+    mat = roll.tracks[0].pianoroll
+    print(mat)
+    mat[mat > 0] = 127
