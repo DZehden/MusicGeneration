@@ -37,6 +37,7 @@ class MusicGAN:
                                               discriminator_optimizer=disc_opt,
                                               generator=gen,
                                               discriminator=disc)
+        self.model_loaded = load_model
         self.chkpt_man = tf.train.CheckpointManager(self.checkpoint, self.checkpoint_dir, max_to_keep=3)
         if load_model:
             self.checkpoint.restore(self.chkpt_man.latest_checkpoint)
@@ -142,7 +143,7 @@ class MusicGAN:
         return cross_entropy(tf.ones_like(fake_output), fake_output)
 
     def get_train_bools(self, fake_res, real_res, epoch):
-        if epoch == 0 and not self.load_model:
+        if (epoch == 0) and (not self.model_loaded):
             disc_train = True
             gen_train = True
             return disc_train, gen_train
@@ -165,13 +166,13 @@ class MusicGAN:
             number of epochs to train for
         :return: None
         """
-        disc_train = True
-        gen_train = True
         for epoch in range(self.epochs, self.epochs + epochs):
             start = time.time()
             fake_avg = 0
             real_avg = 0
             disc_train, gen_train = self.get_train_bools(fake_avg, real_avg, epoch)
+            # train_str = 'Training ' + ('discrminator, ' if disc_train else '') + ('generator' if gen_train else '')
+            # print(train_str)
             for image_batch in dataset:
                 resized_in = np.resize(image_batch, (1, 384, 128, 1))
                 resized_in = resized_in.astype('float32')
