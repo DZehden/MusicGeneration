@@ -170,7 +170,7 @@ class MusicGAN:
         for epoch in range(self.epochs, self.epochs + epochs):
             start = time.time()
             fake_avg = 0
-            real_avg = 0
+            real_avg =0
             disc_train, gen_train = self.get_train_bools(fake_avg, real_avg, epoch)
             # train_str = 'Training ' + ('discrminator, ' if disc_train else '') + ('generator' if gen_train else '')
             # print(train_str)
@@ -179,8 +179,8 @@ class MusicGAN:
                 resized_in = resized_in.astype('float32')
 
                 fake_res, real_res = self.train_step(resized_in, disc_train, gen_train)
-                fake_avg += fake_res / len(dataset)
-                real_avg += real_res / len(dataset)
+                fake_avg += np.average(fake_res)
+                real_avg += np.average(real_res)
 
 
                 # print('Training discriminator: {0} (real_pred={1}, fake_pred, {2})'.format(disc_train, real_res, fake_res))
@@ -192,7 +192,7 @@ class MusicGAN:
                 #pred = self.predict_from_midi(self.output_dir+'50.mid')
                 #print('Prediction on ' + '50.mid'+ ': {0}'.format(pred))
             print('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
-            print('Average real prediction: {0}, Average fake prediction: {1}'.format(real_avg, fake_avg))
+            print('Average real prediction: {0}, Average fake prediction: {1}'.format(np.average(real_avg), np.average(fake_avg)))
             self.epochs += 1
             #pred = self.predict_from_midi('./output/1.mid')
             #print('Prediction: {0}'.format(pred))
@@ -296,4 +296,4 @@ class MusicGAN:
             self.discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, self.discriminator.trainable_variables))
         if gen_train:
             self.generator_optimizer.apply_gradients(zip(gradients_of_generator, self.generator.trainable_variables))
-        return fake_output.numpy()[0, 0], real_output.numpy()[0, 0]
+        return fake_output.numpy(), real_output.numpy()
