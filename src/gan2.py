@@ -196,8 +196,9 @@ class MusicGAN:
                 # print('Training discriminator: {0} (real_pred={1}, fake_pred, {2})'.format(disc_train, real_res, fake_res))
 
             # Save the model every 200 epochs
-            if (epoch + 1) % 30 == 0:
-                self.checkpoint.save(file_prefix = self.checkpoint_prefix)
+            if (epoch + 1) % 250 == 0:
+                self.chkpt_man.save()
+
                 self.generate_and_save_audio(self.generator, epoch + 1, seed)
                 #pred = self.predict_from_midi(self.output_dir+'50.mid')
                 #print('Prediction on ' + '50.mid'+ ': {0}'.format(pred))
